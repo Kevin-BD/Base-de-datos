@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <header class="navbar">
+        <nav>
+            <ul>
+                <li><a href="/estadisticas.html">Manuales subidos</a></li>
+                <li><a href="/subir_manual.html">Subir Manual</a></li>
+                <li><a href="/listar_manual.html">Listar Manuales</a></li>
+                <li><a href="#" onclick="logout()" class="logout-button">Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <!-- Contenido principal -->
+    <main class="dashboard-container">
+        <section>
+            <h1>Bienvenido al Sistema de Gestión</h1>
+            <p id="mensaje-usuario" class="user-message"></p>
+        </section>
+
+        <!-- Opciones generales -->
+        <section class="user-options">
+            <h2>Opciones disponibles</h2>
+            <div class="options-container">
+                <a href="/subir_manual.html" class="option-card">
+                    <h3>Subir Manual</h3>
+                    <p>Sube un nuevo manual para que otros usuarios puedan consultarlo.</p>
+                </a>
+                <a href="/listar_manual.html" class="option-card">
+                    <h3>Listar Manuales</h3>
+                    <p>Consulta la lista de manuales disponibles y descárgalos fácilmente.</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Estadísticas -->
+        <section class="estadisticas">
+            <h2>Estadísticas</h2>
+            <div id="estadisticas">
+                <p>Cargando estadísticas...</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Función para verificar y decodificar el token
+        function verificarToken() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return null;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1])); // Decodificar token
+                return payload;
+            } catch (error) {
+                console.error("Error al decodificar el token:", error);
+                window.location.href = '/login.html'; // Redirigir si el token es inválido
+                return null;
+            }
+        }
+
+        // Verificar el token al cargar la página
+        const user = verificarToken();
+        if (user) {
+            // Mostrar mensaje de bienvenida con el rol del usuario
+            document.getElementById('mensaje-usuario').innerText = `Hola, bienvenido al sistema. Tu rol es: ${user.rol}`;
+        }
+
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('token'); // Eliminar token
+            window.location.href = '/login.html'; // Redirigir al login
+        }
+
+        // Función para cargar las estadísticas de manuales
+        async function cargarEstadisticas() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            const response = await fetch('/estadisticas', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('estadisticas').innerHTML = `
+                    <p>Total de manuales subidos: ${result.total_manuales}</p>
+                `;
+            } else {
+                alert(result.error || 'Error al obtener las estadísticas');
+            }
+        }
+
+        // Cargar las estadísticas cuando se carga la página
+        cargarEstadisticas();
+    </script>
+</body>
+</html>
+

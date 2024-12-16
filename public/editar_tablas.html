@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tabla Manuales</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html">INICIO</a></li>
+                <li><a href="/listar_manual.html">Volver a Manuales</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <h1 id="page-title">Editar Tabla Manuales</h1>
+
+    <!-- Mensaje de acceso denegado -->
+    <p id="access-denied" style="display: none; color: red;">Acceso denegado. Solo los administradores pueden acceder a esta página.</p>
+
+    <!-- Formulario para agregar una columna -->
+    <section id="form-section" style="display: none;">
+        <h2>Agregar Columna</h2>
+        <form id="agregar-columna-form">
+            <label for="nombre_columna">Nombre de la Columna:</label>
+            <input type="text" id="nombre_columna" name="nombre_columna" required>
+            <br>
+            <label for="tipo_dato">Tipo de Dato:</label>
+            <select id="tipo_dato" name="tipo_dato" required>
+                <option value="VARCHAR(255)">VARCHAR(255)</option>
+                <option value="INT">INT</option>
+                <option value="DATE">DATE</option>
+                <option value="TEXT">TEXT</option>
+            </select>
+            <br>
+            <button type="submit">Agregar Columna</button>
+        </form>
+    </section>
+
+    <!-- Formulario para eliminar una columna -->
+    <section id="form-section-delete" style="display: none;">
+        <h2>Eliminar Columna</h2>
+        <form id="eliminar-columna-form">
+            <label for="columna_eliminar">Nombre de la Columna a Eliminar:</label>
+            <input type="text" id="columna_eliminar" name="columna_eliminar" required>
+            <br>
+            <button type="submit">Eliminar Columna</button>
+        </form>
+    </section>
+
+    <script>
+        async function verificarAcceso() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir al login si no hay token
+                return;
+            }
+
+            const payload = JSON.parse(atob(token.split('.')[1])); // Decodificar el token
+
+            // Verificar si el usuario es admin
+            if (payload.rol !== 'admin') {
+                document.getElementById('access-denied').style.display = 'block';
+                document.getElementById('page-title').textContent = 'Acceso Denegado';
+                return;
+            }
+
+            // Mostrar los formularios si es admin
+            document.getElementById('form-section').style.display = 'block';
+            document.getElementById('form-section-delete').style.display = 'block';
+        }
+
+        // Función para agregar una columna
+        const agregarColumnaForm = document.getElementById('agregar-columna-form');
+        agregarColumnaForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const nombreColumna = document.getElementById('nombre_columna').value;
+            const tipoDato = document.getElementById('tipo_dato').value;
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('No estás autorizado. Inicia sesión.');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/tabla/manuales/agregar-columna', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ nombre_columna: nombreColumna, tipo_dato: tipoDato }),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || 'Columna agregada exitosamente');
+                    agregarColumnaForm.reset();
+                } else {
+                    alert(result.error || 'Error al agregar la columna');
+                }
+            } catch (error) {
+                console.error('Error al agregar la columna:', error);
+                alert('Ocurrió un error al intentar agregar la columna.');
+            }
+        });
+
+        // Función para eliminar una columna
+        const eliminarColumnaForm = document.getElementById('eliminar-columna-form');
+        eliminarColumnaForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const columnaEliminar = document.getElementById('columna_eliminar').value;
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('No estás autorizado. Inicia sesión.');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/tabla/manuales/eliminar-columna', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ columna_eliminar: columnaEliminar }),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || 'Columna eliminada exitosamente');
+                    eliminarColumnaForm.reset();
+                } else {
+                    alert(result.error || 'Error al eliminar la columna');
+                }
+            } catch (error) {
+                console.error('Error al eliminar la columna:', error);
+                alert('Ocurrió un error al intentar eliminar la columna.');
+            }
+        });
+
+        // Verificar acceso y mostrar contenido
+        verificarAcceso();
+    </script>
+</body>
+</html>
+

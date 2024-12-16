@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Manual</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <header class="navbar">
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html">INICIO</a></li>
+                
+            </ul>
+        </nav>
+    </header>
+
+    <h1>Subir Manual</h1>
+
+    <!-- Formulario para subir manual -->
+    <form id="manual-form" enctype="multipart/form-data">
+        <label for="titulo">Título:</label>
+        <input type="text" id="titulo" name="titulo" required><br>
+
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" required></textarea><br>
+
+        <label for="id_categoria">Categoría:</label>
+        <input type="number" id="id_categoria" name="id_categoria" required><br>
+
+        <label for="archivo">Archivo:</label>
+        <input type="file" id="archivo" name="archivo" required><br>
+
+        <!-- Mensaje de éxito o error -->
+        <div id="message"></div>
+
+        <button type="submit">Subir Manual</button>
+    </form>
+
+    <!-- Indicador de carga (por defecto oculto) -->
+    <div id="loading" style="display:none;">Subiendo manual, por favor espera...</div>
+
+    <script>
+        const form = document.getElementById('manual-form');
+        const messageDiv = document.getElementById('message');
+        const loadingDiv = document.getElementById('loading');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();  // Evitar que el formulario se envíe de forma tradicional
+
+            // Mostrar el indicador de carga
+            loadingDiv.style.display = 'block';
+
+            const formData = new FormData(form);
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';  // Redirigir al login si no hay token
+                return;
+            }
+
+            try {
+                const response = await fetch('/manuales', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                // Mostrar el mensaje de éxito o error
+                if (response.ok) {
+                    messageDiv.innerHTML = `<span style="color: green;">${result.message || 'Manual subido exitosamente'}</span>`;
+                } else {
+                    messageDiv.innerHTML = `<span style="color: red;">${result.error || 'Error desconocido al subir el manual'}</span>`;
+                }
+            } catch (error) {
+                console.error('Error al subir el manual:', error);
+                messageDiv.innerHTML = `<span style="color: red;">Error al subir el manual. Intenta de nuevo.</span>`;
+            } finally {
+                // Ocultar el indicador de carga
+                loadingDiv.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
+

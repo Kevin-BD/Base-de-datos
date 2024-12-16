@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Manual</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Subir Manual</h1>
+    <form id="manual-form" enctype="multipart/form-data">
+        <label for="titulo">Título:</label>
+        <input type="text" id="titulo" name="titulo" required>
+        <br>
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" required></textarea>
+        <br>
+        <label for="id_categoria">Categoría:</label>
+        <input type="number" id="id_categoria" name="id_categoria" required>
+        <br>
+        <label for="archivo">Archivo:</label>
+        <input type="file" id="archivo" name="archivo" required>
+        <br>
+        <button type="submit">Subir Manual</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('manual-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            const response = await fetch('/manuales', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: formData,
+            });
+
+            const result = await response.json();
+            alert(result.message || result.error);
+        });
+    </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <header class="navbar">
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html">INICIO</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <h1>Estadísticas de Manuales</h1>
+    <table id="estadisticas-table" border="1">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Manuales Subidos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Aquí se cargarán los datos -->
+        </tbody>
+    </table>
+    <p id="mensaje-vacio" style="display: none; text-align: center;">No hay estadísticas disponibles.</p>
+
+    <script>
+        async function obtenerEstadisticas() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            const response = await fetch('/estadisticas/manuales-por-usuario', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            const datos = await response.json();
+
+            if (response.ok) {
+                const tableBody = document.querySelector('#estadisticas-table tbody');
+                tableBody.innerHTML = ''; // Limpiar la tabla
+
+                if (datos.length === 0) {
+                    document.getElementById('mensaje-vacio').style.display = 'block'; // Mostrar mensaje si no hay datos
+                } else {
+                    document.getElementById('mensaje-vacio').style.display = 'none'; // Ocultar mensaje
+                    datos.forEach((fila) => {
+                        const row = `
+                            <tr>
+                                <td>${fila.Usuario}</td>
+                                <td>${fila.Manuales_Subidos}</td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                }
+            } else {
+                alert(datos.error || 'Error al obtener las estadísticas');
+            }
+        }
+
+        // Cargar las estadísticas al cargar la página
+        obtenerEstadisticas();
+    </script>
+</body>
+</html>
+

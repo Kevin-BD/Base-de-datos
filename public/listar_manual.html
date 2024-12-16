@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listar Manuales</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <header class="navbar">
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html">INICIO</a></li>
+                <li><a href="/editar_tablas.html" id="editar-tablas-link" style="display: none;">Editar Manuales</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <h1>Manuales Subidos</h1>
+
+    <!-- Campo de búsqueda -->
+    <input type="text" id="search" placeholder="Buscar manuales..." onkeyup="filtrarManuales()" class="search-box">
+
+    <!-- Selector de categoría -->
+    <label for="categoria-select">Filtrar por categoría:</label>
+    <select id="categoria-select" onchange="filtrarPorCategoria()">
+        <option value="">Todas las categorías</option>
+        <option value="1">Diagnóstico</option>
+        <option value="2">Monitoreo</option>
+        <option value="3">Mantenimiento</option>
+        <option value="4">Reparación</option>
+        <option value="5">Soporte Técnico</option>
+    </select>
+
+    <div id="manuales-lista">
+        <!-- Aquí se cargarán los manuales -->
+    </div>
+
+    <script>
+        let manualesData = []; // Para almacenar los manuales cargados
+        let isAdmin = false; // Indica si el usuario tiene rol admin
+
+        async function verificarAcceso() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            const payload = JSON.parse(atob(token.split('.')[1])); // Decodificar el token
+
+            // Verificar si el usuario es admin
+            isAdmin = payload.rol === 'admin';
+
+            // Mostrar el enlace de editar tablas solo si es admin
+            if (isAdmin) {
+                document.getElementById('editar-tablas-link').style.display = 'inline';
+            }
+        }
+
+        async function listarManuales() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            // Solicitar los manuales al backend
+            const response = await fetch('/manuales', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Mostrar los manuales en la página
+                manualesData = result; // Guardar los manuales en la variable
+                mostrarManuales(manualesData); // Mostrar todos los manuales inicialmente
+            } else {
+                alert(result.error || 'Error al obtener los manuales');
+            }
+        }
+
+        async function cargarCategorias() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            // Solicitar las categorías al backend
+            const response = await fetch('/categorias', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            const categorias = await response.json();
+
+            if (response.ok) {
+                const select = document.getElementById('categoria-select');
+                categorias.forEach((categoria) => {
+                    const option = document.createElement('option');
+                    option.value = categoria.id_categoria;
+                    option.textContent = categoria.nombre_categoria;
+                    select.appendChild(option);
+                });
+            } else {
+                alert(categorias.error || 'Error al obtener las categorías');
+            }
+        }
+
+        // Función para mostrar los manuales
+        function mostrarManuales(manos) {
+            const listaDiv = document.getElementById('manuales-lista');
+            listaDiv.innerHTML = ''; // Limpiar la lista actual
+
+            if (manos.length > 0) {
+                manos.forEach((manual) => {
+                    const manualDiv = document.createElement('div');
+                    manualDiv.innerHTML = `
+                        <h3>${manual.titulo}</h3>
+                        <p>${manual.descripcion}</p>
+                        <p>
+                            <a href="/download/${manual.ruta_archivo}" target="_blank">Descargar</a>
+                            ${isAdmin ? `<button onclick="eliminarManual(${manual.id_manual})">Eliminar</button>` : ''}
+                            ${isAdmin ? `<button onclick="location.href='/editar_manual.html?id=${manual.id_manual}'">Editar</button>` : ''}
+                        </p>
+                    `;
+                    listaDiv.appendChild(manualDiv);
+                });
+            } else {
+                listaDiv.innerHTML = '<p>No hay manuales disponibles.</p>';
+            }
+        }
+
+        // Función para filtrar los manuales por texto
+        function filtrarManuales() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const filteredManuales = manualesData.filter((manual) => {
+                return (
+                    manual.titulo.toLowerCase().includes(query) ||
+                    manual.descripcion.toLowerCase().includes(query)
+                );
+            });
+            mostrarManuales(filteredManuales); // Mostrar los resultados filtrados
+        }
+
+        // Función para filtrar manuales por categoría
+        function filtrarPorCategoria() {
+            const categoriaId = document.getElementById('categoria-select').value;
+            if (categoriaId) {
+                const filteredManuales = manualesData.filter((manual) => manual.id_categoria == categoriaId);
+                mostrarManuales(filteredManuales);
+            } else {
+                mostrarManuales(manualesData); // Mostrar todos los manuales si no se selecciona categoría
+            }
+        }
+
+        // Función para eliminar un manual
+        async function eliminarManual(id) {
+            if (!isAdmin) return; // Verificar que sea admin antes de eliminar
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html'; // Redirigir si no hay token
+                return;
+            }
+
+            const confirmar = confirm('¿Estás seguro de que deseas eliminar este manual?');
+            if (!confirmar) return;
+
+            try {
+                const response = await fetch(`/manuales/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Manual eliminado exitosamente');
+                    listarManuales(); // Recargar la lista después de eliminar
+                } else {
+                    alert(result.error || 'Error al eliminar el manual');
+                }
+            } catch (error) {
+                console.error('Error al eliminar el manual:', error);
+                alert('Error al eliminar el manual');
+            }
+        }
+
+        // Verificar acceso y cargar los manuales al cargar la página
+        verificarAcceso();
+        listarManuales();
+        cargarCategorias();
+    </script>
+</body>
+</html>
+
+

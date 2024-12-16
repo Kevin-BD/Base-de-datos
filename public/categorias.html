@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Categorías</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Administrar Categorías</h1>
+    <form id="categoria-form">
+        <label for="nombre_categoria">Nombre de la categoría:</label>
+        <input type="text" id="nombre_categoria" name="nombre_categoria" required>
+        <button type="submit">Crear Categoría</button>
+    </form>
+    <div id="mensaje"></div>
+
+    <script>
+        const form = document.getElementById('categoria-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+            const nombre_categoria = document.getElementById('nombre_categoria').value;
+
+            const response = await fetch('/categorias', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre_categoria })
+            });
+
+            const result = await response.json();
+            document.getElementById('mensaje').textContent = result.message || result.error;
+        });
+    </script>
+</body>
+</html>
